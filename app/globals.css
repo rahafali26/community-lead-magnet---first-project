@@ -1,61 +1,77 @@
 @import "tailwindcss";
 
 :root {
-  --page: #fdf6f1;
-  --ink: #241f2e;
-  --ink-soft: #6b6470;
-  --card: #ffffff;
-  --accent: #241f2e;
-  --accent-soft: #f4e9e3;
-  --brand-pink: #f6c9c9;
-  --brand-peach: #fbe0c4;
-  --brand-purple: #dcd3f0;
-  --ring: #241f2e;
+  --background: #f7f6f9;
+  --surface: #ffffff;
+  --surface-muted: #efedf4;
+  --text-primary: #241f2e;
+  --text-secondary: #6b6478;
+  --border: #e3dfec;
+  --primary: #6a5a8e;
+  --primary-hover: #584a78;
+  --primary-soft: #ede9f4;
+  --secondary: #7a8f6a;
+  --secondary-soft: #eaefe6;
+  --problem-soft: #f3e9e9;
+  --warning: #c98a3e;
+  --error: #b25454;
+  --success: #5e8f6a;
 }
 
 @theme inline {
-  --color-page: var(--page);
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-card: var(--card);
-  --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-brand-pink: var(--brand-pink);
-  --color-brand-peach: var(--brand-peach);
-  --color-brand-purple: var(--brand-purple);
-  --font-sans: var(--font-tajawal);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-problem-soft: var(--problem-soft);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-success: var(--success);
+  --font-heading: var(--font-cairo);
+  --font-body: var(--font-plex-arabic);
 }
 
 body {
-  background: var(--page);
-  color: var(--ink);
+  background: var(--background);
+  color: var(--text-primary);
+  font-family: var(--font-body), sans-serif;
+}
+
+h1, h2, h3, .font-heading {
+  font-family: var(--font-heading), sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
 
 .hero-gradient {
   background: radial-gradient(
       circle at 15% 15%,
-      color-mix(in srgb, var(--brand-purple) 55%, transparent),
+      color-mix(in srgb, var(--primary-soft) 70%, transparent),
       transparent 45%
     ),
     radial-gradient(
       circle at 85% 10%,
-      color-mix(in srgb, var(--brand-pink) 55%, transparent),
+      color-mix(in srgb, var(--secondary-soft) 70%, transparent),
       transparent 45%
     ),
-    radial-gradient(
-      circle at 50% 90%,
-      color-mix(in srgb, var(--brand-peach) 60%, transparent),
-      transparent 50%
-    ),
-    var(--page);
+    var(--background);
 }
 
 ::selection {
-  background: var(--accent);
+  background: var(--primary);
   color: white;
 }
 
 *:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }

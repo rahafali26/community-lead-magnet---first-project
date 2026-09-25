@@ -8,7 +8,7 @@ export type EventName =
   | "completed_audit"
   | "viewed_results"
   | "copied_prompt"
-  | "requested_email"
+  | "downloaded_report"
   | "marketing_opt_in";
 
 function getSessionId(): string {

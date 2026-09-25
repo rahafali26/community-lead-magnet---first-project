@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      setError("بيانات الدخول غير صحيحة");
+      setError("Invalid login credentials");
       setLoading(false);
       return;
     }
@@ -33,14 +33,14 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="min-h-screen hero-gradient flex items-center justify-center px-4">
+    <div className="min-h-screen hero-gradient flex items-center justify-center px-4" dir="ltr" lang="en">
       <Card className="w-full max-w-sm p-8">
-        <h1 className="text-xl font-extrabold text-ink mb-6">دخول الإدارة</h1>
+        <h1 className="font-heading text-xl font-extrabold text-text-primary mb-6">Admin Login</h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <TextField
             id="admin-email"
             type="email"
-            label="البريد الإلكتروني"
+            label="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -48,14 +48,14 @@ export default function AdminLoginPage() {
           <TextField
             id="admin-password"
             type="password"
-            label="كلمة المرور"
+            label="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-error">{error}</p>}
           <Button type="submit" disabled={loading}>
-            {loading ? "جاري الدخول..." : "دخول"}
+            {loading ? "Logging in..." : "Log in"}
           </Button>
         </form>
       </Card>

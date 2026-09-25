@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CONTENT_TASK_KEYS, BUSINESS_TASK_KEYS } from "@/lib/types";
+import { BUSINESS_TASK_KEYS, CONTENT_TASK_KEYS } from "@/lib/types";
 
 const taskHoursValue = z.union([
   z.literal(0),
@@ -10,101 +10,98 @@ const taskHoursValue = z.union([
   z.literal(18),
 ]);
 
-const contentTaskHours = z.partialRecord(z.enum(CONTENT_TASK_KEYS), taskHoursValue);
+const platformSchema = z.enum(["instagram", "tiktok", "youtube", "linkedin", "x", "other"]);
 
-const businessTaskHours = z.partialRecord(z.enum(BUSINESS_TASK_KEYS), taskHoursValue);
-
-export const contentAnswersSchema = z.object({
-  volume: z.enum(["1-4", "5-10", "11-20", "21-30", "30+"]),
-  platformsCount: z.enum(["1", "2", "3", "4+"]),
-  productionStyle: z.enum(["solo", "solo_help", "one_helper", "team"]),
-  taskHours: contentTaskHours,
-  vanishTaskText: z.string().max(500).default(""),
+export const contentVolumeAnswersSchema = z.object({
+  volume: z.enum(["1-4", "5-8", "9-15", "16-30", "30+"]),
+  platforms: z.array(platformSchema).min(1),
+  platformOtherText: z.string().max(200).optional(),
 });
 
-export const businessAnswersSchema = z.object({
-  businessType: z.enum([
-    "service",
-    "product",
-    "digital_product",
-    "course",
-    "subscription",
-    "agency",
-    "other",
-  ]),
-  team: z.enum(["solo", "one_helper", "team"]),
-  clientsCount: z.enum(["0", "1-5", "6-15", "16-30", "30+"]),
-  taskHours: businessTaskHours,
+export const timeBreakdownAnswersSchema = z.object({
+  contentTaskHours: z.partialRecord(z.enum(CONTENT_TASK_KEYS), taskHoursValue),
+  businessTaskHours: z.partialRecord(z.enum(BUSINESS_TASK_KEYS), taskHoursValue).optional(),
 });
 
-export const problemsAnswersSchema = z.object({
+export const painPointsAnswersSchema = z.object({
   selected: z
     .array(
       z.enum([
-        "no_time_content",
-        "no_time_business",
-        "both_take_time",
-        "many_repetitive_tasks",
-        "context_switching",
-        "dont_know_where_to_start",
+        "research_ideas",
+        "planning",
+        "writing",
+        "filming",
+        "editing",
+        "design",
+        "scheduling_publishing",
+        "comments_dm",
+        "business_client_tasks",
         "other",
       ])
     )
-    .min(1, "اختاري على الأقل خيار واحد"),
+    .min(1)
+    .max(3, "You can select up to 3"),
   otherText: z.string().max(300).optional(),
-  automationWishText: z.string().max(500).default(""),
 });
 
 export const aiUsageAnswersSchema = z.object({
-  level: z.enum(["none", "sometimes", "regularly", "heavily"]),
+  level: z.enum(["none", "sometimes", "regularly", "core"]),
   areas: z.array(
     z.enum([
-      "content_ideas",
+      "research_ideas",
+      "planning",
       "writing",
-      "research",
       "design",
-      "video",
+      "editing",
       "analytics",
-      "admin",
-      "customer_service",
+      "client_communication",
+      "automation",
       "other",
     ])
   ),
+  otherText: z.string().max(200).optional(),
+});
+
+export const timeValueAnswersSchema = z.object({
+  choice: z.enum([
+    "more_content",
+    "grow_business",
+    "increase_sales",
+    "client_experience",
+    "learning",
+    "rest",
+    "other",
+  ]),
+  otherText: z.string().max(200).optional(),
 });
 
 export const leadFormSchema = z.object({
-  name: z.string().trim().min(2, "الاسم قصير جدًا").max(100),
-  email: z.string().trim().email("بريد إلكتروني غير صحيح"),
-  accountUrl: z.string().trim().url("رابط غير صحيح").optional().or(z.literal("")),
-  primaryPlatform: z
-    .enum(["instagram", "tiktok", "youtube", "linkedin", "x", "other"])
-    .optional(),
-  dataConsent: z.literal(true, {
-    message: "لازم توافقي على استخدام بياناتك عشان نعرض لك النتيجة",
-  }),
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().email(),
+  accountUrl: z.string().trim().url(),
+  primaryPlatform: platformSchema,
+  primaryPlatformOtherText: z.string().max(200).optional(),
   marketingConsent: z.boolean(),
 });
 
 export const auditSubmissionSchema = z
   .object({
     userType: z.enum(["creator", "creator_business"]),
-    content: contentAnswersSchema,
-    business: businessAnswersSchema.optional(),
-    problems: problemsAnswersSchema,
+    contentVolume: contentVolumeAnswersSchema,
+    timeBreakdown: timeBreakdownAnswersSchema,
+    painPoints: painPointsAnswersSchema,
+    vanishTask: z.string().max(500),
     aiUsage: aiUsageAnswersSchema,
-    timeValue: z.enum([
-      "more_content",
-      "grow_business",
-      "rest",
-      "family",
-      "learning",
-      "other",
-    ]),
+    timeValue: timeValueAnswersSchema,
     lead: leadFormSchema,
+    language: z.enum(["ar", "en"]),
   })
   .refine(
-    (data) => data.userType !== "creator_business" || !!data.business,
-    { message: "إجابات البزنس مطلوبة لهذا النوع من المستخدمين", path: ["business"] }
+    (data) => data.userType !== "creator_business" || !!data.timeBreakdown.businessTaskHours,
+    {
+      message: "Business task hours are required for this user type",
+      path: ["timeBreakdown", "businessTaskHours"],
+    }
   );
 
 export type AuditSubmissionInput = z.infer<typeof auditSubmissionSchema>;

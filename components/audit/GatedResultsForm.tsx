@@ -5,16 +5,10 @@ import { StepShell } from "./StepShell";
 import { TextField } from "@/components/ui/TextField";
 import { Button } from "@/components/ui/Button";
 import { ChoiceCard } from "@/components/ui/ChoiceCard";
-import type { LeadFormData } from "@/lib/types";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import type { LeadFormData, Platform } from "@/lib/types";
 
-const PLATFORMS: { value: NonNullable<LeadFormData["primaryPlatform"]>; label: string }[] = [
-  { value: "instagram", label: "Instagram" },
-  { value: "tiktok", label: "TikTok" },
-  { value: "youtube", label: "YouTube" },
-  { value: "linkedin", label: "LinkedIn" },
-  { value: "x", label: "X" },
-  { value: "other", label: "أخرى" },
-];
+const PLATFORMS: Platform[] = ["instagram", "tiktok", "youtube", "linkedin", "x", "other"];
 
 interface GatedResultsFormProps {
   onSubmit: (lead: LeadFormData) => Promise<void>;
@@ -27,46 +21,51 @@ export function GatedResultsForm({
   isSubmitting,
   errorMessage,
 }: GatedResultsFormProps) {
+  const { dict } = useLocale();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [accountUrl, setAccountUrl] = useState("");
-  const [platform, setPlatform] = useState<LeadFormData["primaryPlatform"]>();
-  const [dataConsent, setDataConsent] = useState(false);
+  const [platform, setPlatform] = useState<Platform>();
+  const [platformOtherText, setPlatformOtherText] = useState("");
   const [marketingConsent, setMarketingConsent] = useState(false);
+  const [dataConsent, setDataConsent] = useState(false);
   const [touched, setTouched] = useState(false);
 
-  const nameError = touched && name.trim().length < 2 ? "الاسم قصير جدًا" : undefined;
+  const nameError = touched && name.trim().length < 2 ? dict.validation.nameTooShort : undefined;
   const emailError =
-    touched && !/^\S+@\S+\.\S+$/.test(email) ? "بريد إلكتروني غير صحيح" : undefined;
+    touched && !/^\S+@\S+\.\S+$/.test(email) ? dict.validation.emailInvalid : undefined;
+  const urlError =
+    touched && !/^https?:\/\/.+/.test(accountUrl) ? dict.validation.urlInvalid : undefined;
 
   const canSubmit =
-    name.trim().length >= 2 && /^\S+@\S+\.\S+$/.test(email) && dataConsent && !isSubmitting;
+    name.trim().length >= 2 &&
+    /^\S+@\S+\.\S+$/.test(email) &&
+    /^https?:\/\/.+/.test(accountUrl) &&
+    platform !== undefined &&
+    dataConsent &&
+    !isSubmitting;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched(true);
-    if (!canSubmit) return;
+    if (!canSubmit || !platform) return;
 
     await onSubmit({
       name: name.trim(),
       email: email.trim(),
-      accountUrl: accountUrl.trim() || undefined,
+      accountUrl: accountUrl.trim(),
       primaryPlatform: platform,
-      dataConsent,
+      primaryPlatformOtherText: platform === "other" ? platformOtherText : undefined,
       marketingConsent,
     });
   }
 
   return (
-    <StepShell
-      title="تحليلك جاهز تقريبًا"
-      subtitle="عبّي بياناتك عشان تشوفي نتيجتك التفصيلية وتوصلك نسخة على إيميلك."
-    >
+    <StepShell title={dict.leadCapture.title} subtitle={dict.leadCapture.subtitle}>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <TextField
           id="lead-name"
-          label="الاسم"
-          placeholder="اسمك"
+          label={dict.leadCapture.nameLabel}
           value={name}
           onChange={(e) => setName(e.target.value)}
           error={nameError}
@@ -75,63 +74,72 @@ export function GatedResultsForm({
         <TextField
           id="lead-email"
           type="email"
-          label="البريد الإلكتروني"
-          placeholder="you@example.com"
+          label={dict.leadCapture.emailLabel}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={emailError}
-          hint="نستخدمه فقط لإرسال نسخة من نتيجتك وأي تحديثات وفق موافقتك."
+          hint={dict.leadCapture.emailHint}
           required
         />
         <TextField
           id="lead-account"
-          label="رابط حساب صناعة المحتوى (اختياري)"
+          label={dict.leadCapture.accountUrlLabel}
           placeholder="https://instagram.com/username"
           value={accountUrl}
           onChange={(e) => setAccountUrl(e.target.value)}
+          error={urlError}
+          required
         />
 
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-bold text-ink">المنصة الأساسية (اختياري)</p>
+          <p className="text-sm font-bold text-text-primary">{dict.leadCapture.platformLabel}</p>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {PLATFORMS.map((p) => (
               <ChoiceCard
-                key={p.value}
-                label={p.label}
-                selected={platform === p.value}
-                onClick={() => setPlatform(platform === p.value ? undefined : p.value)}
+                key={p}
+                label={dict.audit.q2.platformOptions[p]}
+                selected={platform === p}
+                onClick={() => setPlatform(p)}
               />
             ))}
           </div>
+          {platform === "other" && (
+            <TextField
+              id="lead-platform-other"
+              label=""
+              placeholder={dict.common.otherPlaceholder}
+              value={platformOtherText}
+              onChange={(e) => setPlatformOtherText(e.target.value)}
+              autoFocus
+            />
+          )}
         </div>
 
-        <label className="flex items-start gap-3 text-sm text-ink-soft">
+        <label className="flex items-start gap-3 text-sm text-text-secondary">
           <input
             type="checkbox"
             checked={dataConsent}
             onChange={(e) => setDataConsent(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-accent"
+            className="mt-1 h-4 w-4 accent-primary"
             required
           />
-          <span>
-            أوافق على تخزين واستخدام البيانات التي أدخلتها لتشغيل الأداة وتحليل نتيجتي.
-          </span>
+          <span>{dict.leadCapture.dataConsentLabel}</span>
         </label>
 
-        <label className="flex items-start gap-3 text-sm text-ink-soft">
+        <label className="flex items-start gap-3 text-sm text-text-secondary">
           <input
             type="checkbox"
             checked={marketingConsent}
             onChange={(e) => setMarketingConsent(e.target.checked)}
-            className="mt-1 h-4 w-4 accent-accent"
+            className="mt-1 h-4 w-4 accent-primary"
           />
-          <span>أوافق على تلقي تحديثات وأدوات جديدة متعلقة بصناعة المحتوى والـAI.</span>
+          <span>{dict.leadCapture.marketingConsentLabel}</span>
         </label>
 
-        {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
+        {errorMessage && <p className="text-sm text-error">{errorMessage}</p>}
 
         <Button type="submit" disabled={!canSubmit}>
-          {isSubmitting ? "جاري تجهيز النتيجة..." : "عرض النتيجة"}
+          {isSubmitting ? dict.leadCapture.submittingLabel : dict.leadCapture.submitLabel}
         </Button>
       </form>
     </StepShell>

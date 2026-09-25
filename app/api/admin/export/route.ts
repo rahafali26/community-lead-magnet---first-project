@@ -16,12 +16,12 @@ export async function GET() {
   const { data, error } = await supabase
     .from("submissions")
     .select(
-      "id, created_at, name, email, account_url, primary_platform, user_type, marketing_consent, results"
+      "id, created_at, name, email, account_url, primary_platform, user_type, language, marketing_consent, results"
     )
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: "تعذر جلب البيانات" }, { status: 500 });
+    return NextResponse.json({ error: "Could not fetch data" }, { status: 500 });
   }
 
   const headers = [
@@ -32,6 +32,7 @@ export async function GET() {
     "account_url",
     "primary_platform",
     "user_type",
+    "language",
     "marketing_consent",
     "content_hours_total",
     "business_hours_total",
@@ -48,6 +49,7 @@ export async function GET() {
       row.account_url,
       row.primary_platform,
       row.user_type,
+      row.language,
       row.marketing_consent,
       results?.contentHoursTotal ?? "",
       results?.businessHoursTotal ?? "",

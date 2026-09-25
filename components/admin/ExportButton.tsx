@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 export function ExportButton() {
   return (
     <a href="/api/admin/export">
-      <Button variant="secondary">تصدير CSV</Button>
+      <Button variant="secondary">Export CSV</Button>
     </a>
   );
 }
