@@ -2,17 +2,11 @@
 
 import { Card } from "@/components/ui/Card";
 import { useLocale } from "@/lib/i18n/LocaleProvider";
-import type { AuditResults, TaskKey, UserType } from "@/lib/types";
+import { resolveCategoryLabel } from "@/lib/solutions/resolveProblem";
+import type { AuditResults, UserType } from "@/lib/types";
 
 function formatHours(h: number): string {
   return h.toFixed(1).replace(/\.0$/, "");
-}
-
-function taskLabel(
-  key: TaskKey,
-  dict: ReturnType<typeof useLocale>["dict"]
-): string {
-  return dict.audit.q3.contentTaskLabels[key] ?? dict.audit.q3.businessTaskLabels[key] ?? key;
 }
 
 export function TimeBreakdown({
@@ -22,8 +16,16 @@ export function TimeBreakdown({
   results: AuditResults;
   userType: UserType;
 }) {
-  const { dict } = useLocale();
-  const maxTaskHours = Math.max(1, ...results.topTaskHours.map((t) => t.hours));
+  const { dict, locale } = useLocale();
+  // Mirrors the canonical topProblems (same items, same #1-#3 order as the Top Problems
+  // section and solution cards) instead of independently picking the highest-hour tasks —
+  // otherwise this chart and the problems below it could show different things.
+  const chartRows = results.topProblems.map((p) => ({
+    key: p.categoryId,
+    label: resolveCategoryLabel(p.categoryId, locale),
+    hours: p.hours,
+  }));
+  const maxTaskHours = Math.max(1, ...chartRows.map((t) => t.hours));
 
   return (
     <Card className="p-6">
@@ -70,10 +72,10 @@ export function TimeBreakdown({
       </div>
 
       <div className="flex flex-col gap-2">
-        {results.topTaskHours.map((t) => (
+        {chartRows.map((t) => (
           <div key={t.key} className="flex items-center gap-3">
             <span className="w-32 shrink-0 truncate text-xs text-text-secondary sm:w-40">
-              {taskLabel(t.key, dict)}
+              {t.label}
             </span>
             <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-muted">
               <div

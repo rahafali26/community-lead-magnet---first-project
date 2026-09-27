@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { getDictionary } from "@/lib/i18n/getDictionary";
-import { resolveAllProblems } from "@/lib/solutions/resolveProblem";
+import { resolveAllProblems, resolveCategoryLabel } from "@/lib/solutions/resolveProblem";
 import type { AuditResults, Locale, TimeValueChoice, UserType } from "@/lib/types";
 
 interface ReportDocumentProps {
@@ -282,6 +282,13 @@ export function ReportDocument({
   const dict = getDictionary(locale);
   const s = styles(locale);
   const resolvedProblems = resolveAllProblems(results.topProblems, locale);
+  // Mirrors the canonical topProblems order (same items/order as the Top Problems section and
+  // solution cards) instead of independently picking the highest-hour tasks.
+  const chartRows = results.topProblems.map((p) => ({
+    key: p.categoryId,
+    label: resolveCategoryLabel(p.categoryId, locale),
+    hours: p.hours,
+  }));
   const dateStr = generatedAt.toLocaleDateString(locale === "ar" ? "ar" : "en-US", {
     year: "numeric",
     month: "long",
@@ -357,12 +364,11 @@ export function ReportDocument({
           </>
         )}
 
-        {results.topTaskHours.slice(0, 5).map((t) => {
-          const max = Math.max(1, ...results.topTaskHours.map((x) => x.hours));
-          const label = dict.audit.q3.contentTaskLabels[t.key] ?? dict.audit.q3.businessTaskLabels[t.key] ?? t.key;
+        {chartRows.map((t) => {
+          const max = Math.max(1, ...chartRows.map((x) => x.hours));
           return (
             <View key={t.key} style={s.taskBarRow}>
-              <Text style={s.taskBarLabel}>{label}</Text>
+              <Text style={s.taskBarLabel}>{t.label}</Text>
               <View style={s.taskBarTrack}>
                 <View style={[s.taskBarFill, { width: `${Math.round((t.hours / max) * 100)}%` }]} />
               </View>

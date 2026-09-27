@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { useAuditStore } from "@/store/auditStore";
 
 /**
- * Always resets the audit store before navigating to /audit. Every "start the audit" entry
- * point on the site must use this instead of a plain Link — otherwise a previously persisted
- * `step` in localStorage (e.g. from an earlier attempt) makes the audit page open wherever the
- * user left off, including landing directly on Lead Capture, which reads as "the audit is
- * broken" even though nothing crashed.
+ * Navigates to /audit with an explicit "start fresh" signal. This does NOT reset the store
+ * directly here — see app/audit/page.tsx for why: zustand's `persist` middleware rehydrates
+ * from localStorage ASYNCHRONOUSLY. A synchronous `reset()` called here, at click time, can be
+ * silently clobbered moments later if that rehydration (e.g. still in flight from this tab's
+ * very first load) resolves afterward and overwrites the reset with old persisted state — which
+ * is exactly how a stale, previously-checked Question-4 pain (from an earlier, unrelated test
+ * session) could still end up in a "fresh" audit despite the user genuinely starting over via
+ * this link. The `?fresh=1` marker lets /audit perform the reset only once hydration is
+ * confirmed complete, which fully eliminates that race instead of just hoping it doesn't occur.
  */
 export function StartAuditLink({
   className,
@@ -19,7 +22,7 @@ export function StartAuditLink({
   children: ReactNode;
 }) {
   return (
-    <Link href="/audit" className={className} onClick={() => useAuditStore.getState().reset()}>
+    <Link href="/audit?fresh=1" className={className}>
       {children}
     </Link>
   );

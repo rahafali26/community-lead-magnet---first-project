@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuditStore } from "@/store/auditStore";
 import { AUDIT_STEPS, TOTAL_AUDIT_QUESTIONS } from "@/lib/auditSteps";
 import { trackEvent } from "@/lib/analytics";
@@ -20,11 +20,23 @@ import { AIUsageStep } from "@/components/audit/AIUsageStep";
 import { GatedResultsForm } from "@/components/audit/GatedResultsForm";
 
 export default function AuditPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen hero-gradient" />}>
+      <AuditPageInner />
+    </Suspense>
+  );
+}
+
+function AuditPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const store = useAuditStore();
   const { dict, locale } = useLocale();
   const [submitError, setSubmitError] = useState<string>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const wantsFreshStart = searchParams.get("fresh") === "1";
+  const [readyToRender, setReadyToRender] = useState(!wantsFreshStart);
 
   const currentStepId = AUDIT_STEPS[store.step];
   const onLeadCapture = store.step >= AUDIT_STEPS.length;
@@ -33,6 +45,32 @@ export default function AuditPage() {
     trackEvent("started_audit");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // "Start Analysis" navigates here with ?fresh=1 instead of resetting the store at click time.
+  // zustand's `persist` middleware rehydrates from localStorage ASYNCHRONOUSLY — a reset fired
+  // synchronously on click can be silently overwritten moments later if that rehydration (e.g.
+  // still in flight from this browser tab's very first load) resolves afterward, restoring an
+  // old persisted answer (like a previously-checked Question-4 pain from an unrelated earlier
+  // session) into what the user believes is a brand-new audit. Gating the reset on confirmed
+  // hydration completion — rather than racing it — removes that window entirely.
+  useEffect(() => {
+    if (!wantsFreshStart) return;
+
+    function resetAndReveal() {
+      useAuditStore.getState().reset();
+      setReadyToRender(true);
+      router.replace("/audit");
+    }
+
+    if (useAuditStore.persist.hasHydrated()) {
+      resetAndReveal();
+      return;
+    }
+
+    const unsubscribe = useAuditStore.persist.onFinishHydration(resetAndReveal);
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsFreshStart]);
 
   function goNext() {
     store.next();
@@ -80,6 +118,12 @@ export default function AuditPage() {
       setSubmitError(dict.leadCapture.genericError);
       setIsSubmitting(false);
     }
+  }
+
+  // Render nothing until a pending "fresh start" reset has actually applied — prevents a
+  // flash of stale, previously-persisted answers (from an earlier session) before reset() runs.
+  if (!readyToRender) {
+    return <div className="min-h-screen hero-gradient" />;
   }
 
   return (

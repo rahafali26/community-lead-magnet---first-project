@@ -26,7 +26,7 @@ export function computeAuditResults(submission: AuditSubmission): AuditResults {
     .filter((entry): entry is [string, number] => (entry[1] ?? 0) > 0)
     .map(([key, hours]) => ({ key: key as TaskKey, hours }))
     .sort((a, b) => b.hours - a.hours)
-    .slice(0, 5);
+    .slice(0, 3);
 
   const topProblems = computeTopProblems(submission, combinedTaskHours);
 

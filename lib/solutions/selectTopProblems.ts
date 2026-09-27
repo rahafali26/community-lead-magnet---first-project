@@ -68,12 +68,11 @@ function matchesVanishTask(categoryId: CategoryId, vanishTask: string): boolean 
 }
 
 /**
- * Top Problems are the user's own Question-4 selections, IN THE ORDER THEY SELECTED THEM —
- * that selection order is their actual stated priority (#1 = highest). Never replaced by a
- * higher-scoring category the user didn't flag, and never re-ranked by automationScore either —
- * an earlier version sorted by `points` here, which silently overrode the user's own priority
- * order with an algorithmic one. `points`/automationScore is still computed and kept on each
- * signal for personalizing the diagnosis text, but it must never reorder the array.
+ * Q4 determines ELIGIBILITY only: a category can only become a Top Problem if the user flagged
+ * it in Question 4 (never substituted for an unselected high-hours category). Once the eligible,
+ * deduplicated set is known, the final display order is by monthly hours (Q3), descending — this
+ * is the single canonical order every surface (Time Breakdown chart, Top Problems section,
+ * solution cards, PDF) must consume as-is, with no independent re-sorting downstream.
  */
 export function computeTopProblems(
   submission: AuditSubmission,
@@ -118,6 +117,6 @@ export function computeTopProblems(
     };
   });
 
-  // Preserve selection order exactly — this IS the user's priority order (#1, #2, #3).
-  return signals;
+  // Eligibility came from Q4 selection order above; final display order is by hours, descending.
+  return signals.sort((a, b) => b.hours - a.hours);
 }
